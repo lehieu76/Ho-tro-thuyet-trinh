@@ -44,40 +44,61 @@ const settingsGuideLineThicknessValue = document.getElementById('settingsGuideLi
 
 // Khởi tạo
 async function init() {
+    console.log('🚀 Bắt đầu khởi tạo Teleprompter...');
+    console.log('📋 Kiểm tra DOM elements:');
+    console.log('   - btnPlayPause:', btnPlayPause);
+    console.log('   - teleprompterContent:', teleprompterContent);
+    console.log('   - teleprompterText:', teleprompterText);
+    
     // Parse URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     sheetUrl = urlParams.get('sheet');
     sessionId = urlParams.get('session') || getSessionId();
+    console.log('📄 URL params - sheetUrl:', sheetUrl, 'sessionId:', sessionId);
 
     if (!sheetUrl) {
+        console.error('❌ Không tìm thấy URL Google Sheet');
         teleprompterText.textContent = 'Lỗi: Không tìm thấy URL Google Sheet';
         return;
     }
 
     // Khởi tạo Firebase
     if (typeof firebase !== 'undefined') {
+        console.log('🔥 Khởi tạo Firebase...');
         initFirebase();
         if (isFirebaseInitialized) {
             setupFirebaseListeners();
         }
+    } else {
+        console.log('⚠️ Firebase SDK chưa được load');
     }
 
     // Load content từ Google Sheet
+    console.log('📥 Đang load content từ Google Sheet...');
     await loadContent();
 
     // Setup controls
+    console.log('⚙️ Setup controls...');
     setupControls();
 
     // Setup keyboard shortcuts
+    console.log('⌨️ Setup keyboard shortcuts...');
     setupKeyboardShortcuts();
 
     // Apply initial settings
+    console.log('🎨 Apply initial settings...');
     applySettings(currentSettings);
+    
+    // Load saved settings from localStorage
+    console.log('💾 Load saved settings...');
+    loadSavedSettings();
 
     // Auto-hide controls after 3 seconds
     setTimeout(() => {
         teleprompterControls.classList.remove('show');
     }, 3000);
+    
+    console.log('✅ Khởi tạo hoàn tất!');
 }
 
 // Load content từ Google Sheet
@@ -152,11 +173,17 @@ function setupFirebaseListeners() {
 
 // Setup controls
 function setupControls() {
+    console.log('🔧 Setup controls - btnPlayPause:', btnPlayPause);
     // Play/Pause button
     if (btnPlayPause) {
-        btnPlayPause.addEventListener('click', togglePlayPause);
+        btnPlayPause.addEventListener('click', (e) => {
+            console.log('🖱️ Nút Play/Pause được click!', 'isPlaying:', isPlaying);
+            e.preventDefault();
+            togglePlayPause();
+        });
+        console.log('✅ Đã attach event listener cho nút Play/Pause');
     } else {
-        console.error('Không tìm thấy nút Play/Pause');
+        console.error('❌ Không tìm thấy nút Play/Pause');
     }
 
     // Speed slider
@@ -311,11 +338,14 @@ function setupKeyboardShortcuts() {
 
 // Toggle play/pause
 function togglePlayPause() {
+    console.log('🎮 togglePlayPause được gọi - isPlaying:', isPlaying, 'scrollInterval:', scrollInterval);
     if (isPlaying) {
+        console.log('⏸️ Đang dừng scroll...');
         stopAutoScroll();
         // Chỉ update Firebase nếu có session từ Remote
         updateFirebasePlayState(false);
     } else {
+        console.log('▶️ Đang bắt đầu scroll...');
         startAutoScroll();
         // Chỉ update Firebase nếu có session từ Remote
         updateFirebasePlayState(true);
@@ -324,35 +354,60 @@ function togglePlayPause() {
 
 // Start auto scroll
 function startAutoScroll() {
+    console.log('🚀 startAutoScroll được gọi');
+    console.log('   - scrollInterval hiện tại:', scrollInterval);
+    console.log('   - teleprompterContent:', teleprompterContent);
+    console.log('   - scrollSpeed:', scrollSpeed);
+    
     if (scrollInterval) {
         // Nếu đã có interval, không tạo mới
+        console.log('⚠️ Đã có scrollInterval, không tạo mới');
+        return;
+    }
+    
+    if (!teleprompterContent) {
+        console.error('❌ teleprompterContent không tồn tại!');
         return;
     }
     
     // Kiểm tra xem có nội dung để scroll không
     const maxScroll = teleprompterContent.scrollHeight - teleprompterContent.clientHeight;
-    console.log('Start auto scroll - maxScroll:', maxScroll, 'scrollHeight:', teleprompterContent.scrollHeight, 'clientHeight:', teleprompterContent.clientHeight);
+    console.log('📊 Thông tin scroll:');
+    console.log('   - maxScroll:', maxScroll);
+    console.log('   - scrollHeight:', teleprompterContent.scrollHeight);
+    console.log('   - clientHeight:', teleprompterContent.clientHeight);
+    console.log('   - scrollTop hiện tại:', teleprompterContent.scrollTop);
     
     if (maxScroll <= 0) {
-        console.log('Không có nội dung để scroll - maxScroll <= 0');
+        console.error('❌ Không có nội dung để scroll - maxScroll <= 0');
         return;
     }
     
+    console.log('✅ Bắt đầu tạo interval...');
     isPlaying = true;
-    btnPlayPause.textContent = '⏸️ Pause';
+    if (btnPlayPause) {
+        btnPlayPause.textContent = '⏸️ Pause';
+    }
     lastScrollUpdateTime = Date.now(); // Reset thời gian update
     isAutoScrolling = true; // Đánh dấu đang auto scroll
+    console.log('✅ Đã set isPlaying = true, isAutoScrolling = true');
     
     let frameCount = 0; // Đếm số frame để debug
+    console.log('🔄 Tạo setInterval...');
     scrollInterval = setInterval(() => {
         frameCount++;
+        
+        // Log frame đầu tiên để xác nhận interval đang chạy
+        if (frameCount === 1) {
+            console.log('✅ Interval đã bắt đầu chạy! Frame 1');
+        }
         
         // Tính toán lại maxScroll mỗi lần (phòng trường hợp content thay đổi)
         const currentMaxScroll = teleprompterContent.scrollHeight - teleprompterContent.clientHeight;
         
         // Nếu không có gì để scroll, dừng lại
         if (currentMaxScroll <= 0) {
-            console.log('Dừng scroll - không có nội dung');
+            console.log('⛔ Dừng scroll - không có nội dung (frame', frameCount + ')');
             isAutoScrolling = false;
             stopAutoScroll();
             return;
@@ -366,9 +421,9 @@ function startAutoScroll() {
         teleprompterContent.scrollTop += scrollAmount;
         const currentScroll = teleprompterContent.scrollTop;
         
-        // Debug log mỗi 60 frame (khoảng 1 giây)
-        if (frameCount % 60 === 0) {
-            console.log(`Scroll frame ${frameCount}: old=${oldScrollTop.toFixed(1)}, new=${currentScroll.toFixed(1)}, max=${currentMaxScroll}, diff=${(currentScroll - oldScrollTop).toFixed(1)}`);
+        // Debug log frame đầu tiên và mỗi 60 frame (khoảng 1 giây)
+        if (frameCount === 1 || frameCount % 60 === 0) {
+            console.log(`📈 Scroll frame ${frameCount}: old=${oldScrollTop.toFixed(1)}, new=${currentScroll.toFixed(1)}, max=${currentMaxScroll}, diff=${(currentScroll - oldScrollTop).toFixed(1)}, speed=${scrollSpeed}`);
         }
         
         // Kiểm tra xem đã đến bottom chưa
@@ -413,13 +468,21 @@ function startAutoScroll() {
 
 // Stop auto scroll
 function stopAutoScroll() {
+    console.log('⏹️ stopAutoScroll được gọi - scrollInterval:', scrollInterval);
     if (scrollInterval) {
+        console.log('🛑 Đang clear interval...');
         clearInterval(scrollInterval);
         scrollInterval = null;
+        console.log('✅ Đã clear interval');
+    } else {
+        console.log('⚠️ Không có interval để clear');
     }
     isPlaying = false;
     isAutoScrolling = false; // Reset flag
-    btnPlayPause.textContent = '▶️ Play';
+    if (btnPlayPause) {
+        btnPlayPause.textContent = '▶️ Play';
+    }
+    console.log('✅ Đã set isPlaying = false, isAutoScrolling = false');
 }
 
 // Get scroll percentage
