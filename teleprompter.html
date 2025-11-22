@@ -23,7 +23,59 @@
                 <span id="speedValue">1.0x</span>
             </div>
             <button id="btnReset">🔄 Reset</button>
+            <button id="btnSettings">⚙️ Settings</button>
             <button id="btnFullscreen">⛶ Fullscreen</button>
+        </div>
+        
+        <!-- Settings Panel -->
+        <div class="teleprompter-settings-panel" id="settingsPanel">
+            <div class="settings-header">
+                <h3>⚙️ Cài đặt hiển thị</h3>
+                <button id="btnCloseSettings">✕</button>
+            </div>
+            <div class="settings-content">
+                <div class="control-group">
+                    <label>
+                        Kích thước font: <span class="value-display" id="settingsFontSizeValue">48px</span>
+                    </label>
+                    <input type="range" id="settingsFontSizeSlider" min="12" max="120" step="2" value="48">
+                </div>
+                
+                <div class="control-group">
+                    <label>
+                        Khoảng cách dòng: <span class="value-display" id="settingsLineHeightValue">1.6</span>
+                    </label>
+                    <input type="range" id="settingsLineHeightSlider" min="0.8" max="3" step="0.1" value="1.6">
+                </div>
+                
+                <div class="control-group">
+                    <label>
+                        Màu nền:
+                        <input type="color" id="settingsBackgroundColorPicker" value="#000000">
+                    </label>
+                </div>
+                
+                <div class="control-group">
+                    <label>
+                        Màu chữ:
+                        <input type="color" id="settingsTextColorPicker" value="#ffffff">
+                    </label>
+                </div>
+                
+                <div class="control-group">
+                    <label>
+                        Màu thanh gạch ngang:
+                        <input type="color" id="settingsGuideLineColorPicker" value="#ff0000">
+                    </label>
+                </div>
+                
+                <div class="control-group">
+                    <label>
+                        Độ dày thanh gạch ngang: <span class="value-display" id="settingsGuideLineThicknessValue">2px</span>
+                    </label>
+                    <input type="range" id="settingsGuideLineThicknessSlider" min="1" max="10" step="1" value="2">
+                </div>
+            </div>
         </div>
     </div>
 

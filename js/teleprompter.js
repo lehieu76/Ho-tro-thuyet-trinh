@@ -27,7 +27,19 @@ const btnPlayPause = document.getElementById('btnPlayPause');
 const speedSlider = document.getElementById('speedSlider');
 const speedValue = document.getElementById('speedValue');
 const btnReset = document.getElementById('btnReset');
+const btnSettings = document.getElementById('btnSettings');
 const btnFullscreen = document.getElementById('btnFullscreen');
+const settingsPanel = document.getElementById('settingsPanel');
+const btnCloseSettings = document.getElementById('btnCloseSettings');
+const settingsFontSizeSlider = document.getElementById('settingsFontSizeSlider');
+const settingsFontSizeValue = document.getElementById('settingsFontSizeValue');
+const settingsLineHeightSlider = document.getElementById('settingsLineHeightSlider');
+const settingsLineHeightValue = document.getElementById('settingsLineHeightValue');
+const settingsBackgroundColorPicker = document.getElementById('settingsBackgroundColorPicker');
+const settingsTextColorPicker = document.getElementById('settingsTextColorPicker');
+const settingsGuideLineColorPicker = document.getElementById('settingsGuideLineColorPicker');
+const settingsGuideLineThicknessSlider = document.getElementById('settingsGuideLineThicknessSlider');
+const settingsGuideLineThicknessValue = document.getElementById('settingsGuideLineThicknessValue');
 
 // Khởi tạo
 async function init() {
@@ -98,17 +110,20 @@ function setupFirebaseListeners() {
         }
     });
 
-    // Listen for play/pause state
-    sessionRef.child('isPlaying').on('value', (snapshot) => {
-        const playing = snapshot.val();
-        if (playing !== null && playing !== undefined) {
-            if (playing && !isPlaying) {
-                startAutoScroll();
-            } else if (!playing && isPlaying) {
-                stopAutoScroll();
+    // Listen for play/pause state (chỉ khi có session từ Remote)
+    // Nếu không có session trong URL, không lắng nghe để tránh conflict
+    if (window.location.search.includes('session=')) {
+        sessionRef.child('isPlaying').on('value', (snapshot) => {
+            const playing = snapshot.val();
+            if (playing !== null && playing !== undefined) {
+                if (playing && !isPlaying) {
+                    startAutoScroll();
+                } else if (!playing && isPlaying) {
+                    stopAutoScroll();
+                }
             }
-        }
-    });
+        });
+    }
 
     // Listen for speed changes
     sessionRef.child('speed').on('value', (snapshot) => {
@@ -158,6 +173,55 @@ function setupControls() {
         updateFirebasePlayState(false);
     });
 
+    // Settings button
+    btnSettings.addEventListener('click', () => {
+        settingsPanel.classList.add('show');
+        teleprompterControls.classList.remove('show');
+    });
+
+    // Close settings button
+    btnCloseSettings.addEventListener('click', () => {
+        settingsPanel.classList.remove('show');
+    });
+
+    // Settings controls
+    settingsFontSizeSlider.addEventListener('input', (e) => {
+        const size = parseInt(e.target.value);
+        settingsFontSizeValue.textContent = size + 'px';
+        updateSetting('fontSize', size);
+    });
+
+    settingsLineHeightSlider.addEventListener('input', (e) => {
+        const height = parseFloat(e.target.value);
+        settingsLineHeightValue.textContent = height.toFixed(1);
+        updateSetting('lineHeight', height);
+    });
+
+    settingsBackgroundColorPicker.addEventListener('input', (e) => {
+        updateSetting('backgroundColor', e.target.value);
+    });
+
+    settingsTextColorPicker.addEventListener('input', (e) => {
+        updateSetting('textColor', e.target.value);
+    });
+
+    settingsGuideLineColorPicker.addEventListener('input', (e) => {
+        updateSetting('guideLineColor', e.target.value);
+    });
+
+    settingsGuideLineThicknessSlider.addEventListener('input', (e) => {
+        const thickness = parseInt(e.target.value);
+        settingsGuideLineThicknessValue.textContent = thickness + 'px';
+        updateSetting('guideLineThickness', thickness);
+    });
+
+    // Close settings when clicking outside
+    settingsPanel.addEventListener('click', (e) => {
+        if (e.target === settingsPanel) {
+            settingsPanel.classList.remove('show');
+        }
+    });
+
     // Fullscreen button
     btnFullscreen.addEventListener('click', toggleFullscreen);
 
@@ -178,7 +242,9 @@ function setupControls() {
         
         if (isPlaying) {
             stopAutoScroll();
-            updateFirebasePlayState(false);
+            if (database && sessionId && window.location.search.includes('session=')) {
+                updateFirebasePlayState(false);
+            }
         }
         // Debounce: chỉ update sau 100ms khi người dùng ngừng scroll
         clearTimeout(scrollUpdateTimeout);
@@ -225,10 +291,16 @@ function setupKeyboardShortcuts() {
 function togglePlayPause() {
     if (isPlaying) {
         stopAutoScroll();
-        updateFirebasePlayState(false);
+        // Chỉ update Firebase nếu đã kết nối (có session từ Remote)
+        if (database && sessionId && window.location.search.includes('session=')) {
+            updateFirebasePlayState(false);
+        }
     } else {
         startAutoScroll();
-        updateFirebasePlayState(true);
+        // Chỉ update Firebase nếu đã kết nối (có session từ Remote)
+        if (database && sessionId && window.location.search.includes('session=')) {
+            updateFirebasePlayState(true);
+        }
     }
 }
 
@@ -242,13 +314,20 @@ function startAutoScroll() {
     
     scrollInterval = setInterval(() => {
         const scrollAmount = scrollSpeed * 2; // pixels per interval
+        const oldScrollTop = teleprompterContent.scrollTop;
         teleprompterContent.scrollTop += scrollAmount;
         
-        // Check if reached bottom
+        // Check if reached bottom (với margin nhỏ để tránh dừng sớm)
         const maxScroll = teleprompterContent.scrollHeight - teleprompterContent.clientHeight;
-        if (teleprompterContent.scrollTop >= maxScroll) {
+        const currentScroll = teleprompterContent.scrollTop;
+        
+        // Nếu scroll không thay đổi (đã đến bottom) hoặc vượt quá bottom
+        if (currentScroll >= maxScroll - 1 || oldScrollTop === currentScroll) {
             stopAutoScroll();
-            updateFirebasePlayState(false);
+            if (database && sessionId && window.location.search.includes('session=')) {
+                updateFirebasePlayState(false);
+            }
+            return;
         }
         
         // Throttle: chỉ update Firebase mỗi 200ms (thay vì mỗi 16ms)
@@ -323,8 +402,50 @@ function updateFirebasePlayState(playing) {
 }
 
 function updateFirebaseSpeed(speed) {
-    if (database && sessionId) {
+    if (database && sessionId && window.location.search.includes('session=')) {
         database.ref(`sessions/${sessionId}/speed`).set(speed);
+    }
+}
+
+// Load saved settings from localStorage
+function loadSavedSettings() {
+    const saved = localStorage.getItem('teleprompter_settings');
+    if (saved) {
+        try {
+            const settings = JSON.parse(saved);
+            currentSettings = { ...currentSettings, ...settings };
+            applySettings(currentSettings);
+            
+            // Update UI sliders
+            if (settingsFontSizeSlider) settingsFontSizeSlider.value = currentSettings.fontSize;
+            if (settingsFontSizeValue) settingsFontSizeValue.textContent = currentSettings.fontSize + 'px';
+            if (settingsLineHeightSlider) settingsLineHeightSlider.value = currentSettings.lineHeight;
+            if (settingsLineHeightValue) settingsLineHeightValue.textContent = currentSettings.lineHeight.toFixed(1);
+            if (settingsBackgroundColorPicker) settingsBackgroundColorPicker.value = currentSettings.backgroundColor;
+            if (settingsTextColorPicker) settingsTextColorPicker.value = currentSettings.textColor;
+            if (settingsGuideLineColorPicker) settingsGuideLineColorPicker.value = currentSettings.guideLineColor;
+            if (settingsGuideLineThicknessSlider) settingsGuideLineThicknessSlider.value = currentSettings.guideLineThickness;
+            if (settingsGuideLineThicknessValue) settingsGuideLineThicknessValue.textContent = currentSettings.guideLineThickness + 'px';
+        } catch (e) {
+            console.error('Lỗi khi load settings:', e);
+        }
+    }
+}
+
+// Save settings to localStorage
+function saveSettings() {
+    localStorage.setItem('teleprompter_settings', JSON.stringify(currentSettings));
+}
+
+// Update setting function
+function updateSetting(key, value) {
+    currentSettings[key] = value;
+    applySettings(currentSettings);
+    saveSettings();
+    
+    // Sync to Firebase nếu có session từ Remote
+    if (database && sessionId && window.location.search.includes('session=')) {
+        database.ref(`sessions/${sessionId}/settings/${key}`).set(value);
     }
 }
 

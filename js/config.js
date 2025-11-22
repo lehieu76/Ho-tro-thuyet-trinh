@@ -1,13 +1,13 @@
 // Firebase Configuration
 // Người dùng cần thay thế các giá trị này bằng thông tin Firebase project của họ
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyC7yaU3QNS333qcQV7H9b2plx2N1nO2ESc",
+    authDomain: "ho-tro-thuyet-trinh.firebaseapp.com",
+    databaseURL: "https://ho-tro-thuyet-trinh-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "ho-tro-thuyet-trinh",
+    storageBucket: "ho-tro-thuyet-trinh.firebasestorage.app",
+    messagingSenderId: "370932469766",
+    appId: "1:370932469766:web:ff108429894c811f0bb387"
 };
 
 // Khởi tạo Firebase (sẽ được gọi sau khi Firebase SDK được load)
