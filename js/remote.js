@@ -1,8 +1,6 @@
 // Remote Control Logic
 let sessionId;
 let isConnected = false;
-let scrollUpdateTimeout = null; // Timeout cho debounce scroll slider
-let speedUpdateTimeout = null; // Timeout cho debounce speed slider
 
 // Current state
 let currentState = {
@@ -42,23 +40,50 @@ const guideLineThicknessValue = document.getElementById('guideLineThicknessValue
 
 // Khởi tạo
 function init() {
+    console.log('🚀 Khởi tạo Remote Control...');
+    
     // Parse URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     sessionId = urlParams.get('session') || getSessionId();
 
     // Display session ID
     sessionDisplay.textContent = sessionId;
+    console.log('📋 Session ID:', sessionId);
 
-    // Khởi tạo Firebase
+    // Khởi tạo Firebase - đợi Firebase SDK load xong
     if (typeof firebase !== 'undefined') {
-        initFirebase();
-        if (isFirebaseInitialized) {
+        const initResult = initFirebase();
+        if (initResult && database) {
             setupFirebase();
         } else {
-            showError('Không thể khởi tạo Firebase. Vui lòng kiểm tra cấu hình.');
+            // Thử lại sau 1 giây nếu Firebase chưa sẵn sàng
+            setTimeout(() => {
+                const retryResult = initFirebase();
+                if (retryResult && database) {
+                    setupFirebase();
+                } else {
+                    showError('Không thể khởi tạo Firebase. Vui lòng kiểm tra cấu hình trong config.js');
+                }
+            }, 1000);
         }
     } else {
-        showError('Firebase SDK chưa được load. Vui lòng kiểm tra kết nối internet.');
+        // Đợi Firebase SDK load
+        let checkCount = 0;
+        const checkFirebase = setInterval(() => {
+            checkCount++;
+            if (typeof firebase !== 'undefined') {
+                clearInterval(checkFirebase);
+                const initResult = initFirebase();
+                if (initResult && database) {
+                    setupFirebase();
+                } else {
+                    showError('Không thể khởi tạo Firebase. Vui lòng kiểm tra cấu hình.');
+                }
+            } else if (checkCount > 10) {
+                clearInterval(checkFirebase);
+                showError('Firebase SDK không thể load. Vui lòng kiểm tra kết nối internet.');
+            }
+        }, 500);
     }
 
     // Setup controls
@@ -71,19 +96,40 @@ function init() {
 // Setup Firebase
 function setupFirebase() {
     if (!database) {
-        showError('Database không khả dụng');
+        showError('Database không khả dụng. Kiểm tra config.js');
         return;
     }
 
     const sessionRef = database.ref(`sessions/${sessionId}`);
 
-    // Initialize session data
-    sessionRef.set(currentState).then(() => {
-        isConnected = true;
-        updateConnectionStatus(true);
+    // Kiểm tra kết nối trước
+    database.ref('.info/connected').once('value').then((snapshot) => {
+        const connected = snapshot.val();
+        if (connected) {
+            // Initialize session data
+            sessionRef.set(currentState).then(() => {
+                isConnected = true;
+                updateConnectionStatus(true);
+                console.log('✅ Đã kết nối Firebase và khởi tạo session');
+            }).catch((error) => {
+                console.error('Lỗi khi khởi tạo session:', error);
+                // Kiểm tra lỗi cụ thể
+                if (error.code === 'PERMISSION_DENIED') {
+                    showError('Lỗi quyền truy cập. Vui lòng cấu hình Database Rules trong Firebase Console. Xem hướng dẫn trong HUONG_DAN_FIREBASE.md');
+                } else {
+                    showError('Lỗi khi kết nối Firebase: ' + error.message);
+                }
+            });
+        } else {
+            showError('Chưa kết nối được với Firebase. Kiểm tra internet và config.js');
+        }
     }).catch((error) => {
-        console.error('Lỗi khi khởi tạo session:', error);
-        showError('Lỗi khi kết nối Firebase');
+        console.error('Lỗi khi kiểm tra kết nối:', error);
+        if (error.code === 'PERMISSION_DENIED') {
+            showError('Lỗi quyền truy cập. Vui lòng cấu hình Database Rules trong Firebase Console.');
+        } else {
+            showError('Lỗi kết nối Firebase. Kiểm tra config.js và Database Rules.');
+        }
     });
 
     // Listen for changes from teleprompter (two-way sync)
@@ -181,6 +227,10 @@ function setupControls() {
     });
 }
 
+// Variables for throttling
+let scrollUpdateTimeout = null;
+let speedUpdateTimeout = null;
+
 // Update UI from state (without triggering Firebase updates)
 function updateUIFromState(state) {
     // Update scroll position
@@ -227,28 +277,53 @@ function updateUIFromState(state) {
     }
 }
 
-// Firebase update functions
+// Firebase update functions with error handling
 function updatePlayState(playing) {
     if (database && sessionId) {
-        database.ref(`sessions/${sessionId}/isPlaying`).set(playing);
+        database.ref(`sessions/${sessionId}/isPlaying`).set(playing).catch((error) => {
+            if (error.code === 'PERMISSION_DENIED') {
+                console.error('❌ Lỗi quyền truy cập khi update isPlaying. Vui lòng cấu hình Database Rules.');
+                showError('Lỗi quyền truy cập. Kiểm tra Database Rules trong Firebase Console.');
+            } else {
+                console.error('Lỗi update play state:', error);
+            }
+        });
     }
 }
 
 function updateSpeed(speed) {
     if (database && sessionId) {
-        database.ref(`sessions/${sessionId}/speed`).set(speed);
+        database.ref(`sessions/${sessionId}/speed`).set(speed).catch((error) => {
+            if (error.code === 'PERMISSION_DENIED') {
+                console.error('❌ Lỗi quyền truy cập khi update speed.');
+            } else {
+                console.error('Lỗi update speed:', error);
+            }
+        });
     }
 }
 
 function updateScrollPosition(position) {
     if (database && sessionId) {
-        database.ref(`sessions/${sessionId}/scrollPosition`).set(position);
+        database.ref(`sessions/${sessionId}/scrollPosition`).set(position).catch((error) => {
+            if (error.code === 'PERMISSION_DENIED') {
+                console.error('❌ Lỗi quyền truy cập khi update scrollPosition.');
+            } else {
+                console.error('Lỗi update scroll position:', error);
+            }
+        });
     }
 }
 
 function updateSetting(key, value) {
     if (database && sessionId) {
-        database.ref(`sessions/${sessionId}/settings/${key}`).set(value);
+        database.ref(`sessions/${sessionId}/settings/${key}`).set(value).catch((error) => {
+            if (error.code === 'PERMISSION_DENIED') {
+                console.error('❌ Lỗi quyền truy cập khi update setting:', key);
+            } else {
+                console.error('Lỗi update setting:', error);
+            }
+        });
     }
     // Save to localStorage
     saveSettings();
@@ -288,7 +363,11 @@ function loadSavedSettings() {
             updateUIFromState(currentState);
             // Apply saved settings to Firebase
             if (database && sessionId) {
-                database.ref(`sessions/${sessionId}/settings`).set(currentState.settings);
+                database.ref(`sessions/${sessionId}/settings`).set(currentState.settings).catch((error) => {
+                    if (error.code !== 'PERMISSION_DENIED') {
+                        console.error('Lỗi khi load settings:', error);
+                    }
+                });
             }
         } catch (e) {
             console.error('Lỗi khi load settings:', e);

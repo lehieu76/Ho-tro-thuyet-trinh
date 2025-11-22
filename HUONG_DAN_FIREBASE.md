@@ -102,21 +102,14 @@ const firebaseConfig = {
 
 4. Lưu file
 
-## Bước 6: Kiểm tra Realtime Database Rules
+## Bước 6: Cấu hình Realtime Database Rules (QUAN TRỌNG!)
+
+**⚠️ Đây là bước QUAN TRỌNG NHẤT!** Nếu không cấu hình đúng, bạn sẽ gặp lỗi `permission_denied`.
 
 1. Vào **Realtime Database** > **Rules** (tab ở trên cùng)
-2. Nếu bạn chọn "Test mode", rules sẽ như sau:
+2. Nếu bạn chọn "Test mode", rules sẽ có thời gian hết hạn (30 ngày). Sau 30 ngày, bạn sẽ gặp lỗi `permission_denied`.
 
-```json
-{
-  "rules": {
-    ".read": "now < 1609459200000",  // Thời gian hết hạn (30 ngày)
-    ".write": "now < 1609459200000"
-  }
-}
-```
-
-3. Nếu muốn cho phép đọc/ghi vĩnh viễn (chỉ dùng cho test, không dùng cho production):
+3. **Để cho phép đọc/ghi vĩnh viễn** (chỉ dùng cho test, không dùng cho production):
 
 ```json
 {
@@ -128,6 +121,26 @@ const firebaseConfig = {
 ```
 
 **⚠️ Cảnh báo:** Rules này cho phép ai cũng đọc/ghi database. Chỉ dùng cho test hoặc nếu bạn không quan tâm bảo mật.
+
+4. **Nếu bạn muốn bảo mật hơn** (chỉ cho phép đọc/ghi trong thư mục `sessions`):
+
+```json
+{
+  "rules": {
+    "sessions": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}
+```
+
+5. Click **"Publish"** / **"Xuất bản"** để lưu rules
+
+**Lưu ý:** Sau khi thay đổi rules, có thể mất vài giây để áp dụng. Nếu vẫn gặp lỗi `permission_denied`, hãy:
+- Đợi 10-20 giây và thử lại
+- Kiểm tra lại rules đã được publish chưa
+- Refresh trang Remote và Teleprompter
 
 4. Click **"Publish"** / **"Xuất bản"**
 
