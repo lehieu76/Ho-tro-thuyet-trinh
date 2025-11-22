@@ -268,13 +268,19 @@ function setupControls() {
     });
 
     // Manual scroll - debounce để tránh update quá nhiều
-    let isAutoScrolling = false; // Flag để phân biệt auto scroll và manual scroll
+    // KHÔNG khai báo lại isAutoScrolling - dùng biến global
     teleprompterContent.addEventListener('scroll', () => {
+        console.log('📜 Scroll event triggered - isAutoScrolling:', isAutoScrolling, 'isPlaying:', isPlaying);
+        
         // Tránh update nếu đang nhận update từ Firebase (tránh loop)
-        if (isUpdatingFromFirebase) return;
+        if (isUpdatingFromFirebase) {
+            console.log('   ⏭️ Bỏ qua - đang update từ Firebase');
+            return;
+        }
         
         // Nếu đang auto scroll, không dừng - chỉ update position
         if (isAutoScrolling) {
+            console.log('   ✅ Đang auto scroll - không dừng, chỉ update position');
             // Chỉ update Firebase nếu có session từ Remote
             if (window.location.search.includes('session=')) {
                 clearTimeout(scrollUpdateTimeout);
@@ -287,6 +293,7 @@ function setupControls() {
         
         // Nếu là manual scroll (người dùng kéo), dừng auto scroll
         if (isPlaying) {
+            console.log('   🛑 Manual scroll detected - dừng auto scroll');
             stopAutoScroll();
             if (database && sessionId && window.location.search.includes('session=')) {
                 updateFirebasePlayState(false);
@@ -417,13 +424,26 @@ function startAutoScroll() {
         const scrollAmount = scrollSpeed * 5;
         const oldScrollTop = teleprompterContent.scrollTop;
         
-        // Scroll xuống
+        // Scroll xuống - đảm bảo isAutoScrolling = true trước khi scroll
+        isAutoScrolling = true;
         teleprompterContent.scrollTop += scrollAmount;
         const currentScroll = teleprompterContent.scrollTop;
+        const actualDiff = currentScroll - oldScrollTop;
         
         // Debug log frame đầu tiên và mỗi 60 frame (khoảng 1 giây)
         if (frameCount === 1 || frameCount % 60 === 0) {
-            console.log(`📈 Scroll frame ${frameCount}: old=${oldScrollTop.toFixed(1)}, new=${currentScroll.toFixed(1)}, max=${currentMaxScroll}, diff=${(currentScroll - oldScrollTop).toFixed(1)}, speed=${scrollSpeed}`);
+            console.log(`📈 Scroll frame ${frameCount}: old=${oldScrollTop.toFixed(1)}, new=${currentScroll.toFixed(1)}, max=${currentMaxScroll}, diff=${actualDiff.toFixed(1)}, speed=${scrollSpeed}, scrollAmount=${scrollAmount}`);
+        }
+        
+        // Nếu scroll không thay đổi ngay từ đầu, có thể có vấn đề
+        if (frameCount === 1 && actualDiff === 0) {
+            console.warn('⚠️ CẢNH BÁO: Scroll không thay đổi ở frame đầu tiên!');
+            console.warn('   - scrollAmount:', scrollAmount);
+            console.warn('   - scrollTop trước:', oldScrollTop);
+            console.warn('   - scrollTop sau:', currentScroll);
+            console.warn('   - scrollHeight:', teleprompterContent.scrollHeight);
+            console.warn('   - clientHeight:', teleprompterContent.clientHeight);
+            console.warn('   - overflow:', window.getComputedStyle(teleprompterContent).overflow);
         }
         
         // Kiểm tra xem đã đến bottom chưa
@@ -442,16 +462,22 @@ function startAutoScroll() {
         
         // Kiểm tra nếu scroll không thay đổi - chỉ check khi đã scroll được nhiều
         // Và chỉ khi thực sự gần bottom
+        // QUAN TRỌNG: Không check ở frame đầu tiên vì có thể scroll chưa kịp thay đổi
         const scrollDiff = Math.abs(currentScroll - oldScrollTop);
-        if (oldScrollTop > 100 && scrollDiff < 0.1 && currentScroll >= currentMaxScroll - 20) {
+        if (frameCount > 10 && oldScrollTop > 100 && scrollDiff < 0.1 && currentScroll >= currentMaxScroll - 20) {
             // Scroll không thay đổi và đã gần bottom, có thể đã đến bottom
-            console.log('Scroll không thay đổi - có thể đã đến bottom. old:', oldScrollTop, 'new:', currentScroll, 'max:', currentMaxScroll);
+            console.log('⛔ Scroll không thay đổi - có thể đã đến bottom. old:', oldScrollTop, 'new:', currentScroll, 'max:', currentMaxScroll, 'frame:', frameCount);
             isAutoScrolling = false;
             stopAutoScroll();
             if (database && sessionId && window.location.search.includes('session=')) {
                 updateFirebasePlayState(false);
             }
             return;
+        }
+        
+        // Nếu scroll không thay đổi sau nhiều frame, có thể có vấn đề
+        if (frameCount > 5 && scrollDiff < 0.1 && oldScrollTop < currentMaxScroll - 100) {
+            console.warn('⚠️ Scroll không thay đổi sau nhiều frame! Frame:', frameCount, 'diff:', scrollDiff);
         }
         
         // Throttle: chỉ update Firebase mỗi 200ms (thay vì mỗi 16ms)
