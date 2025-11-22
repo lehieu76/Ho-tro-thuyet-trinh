@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teleprompter - Chọn chế độ</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="index-container">
+        <h1>📺 Teleprompter</h1>
+        
+        <div class="input-group">
+            <label for="sheetUrl">URL Google Sheet (công khai):</label>
+            <input 
+                type="text" 
+                id="sheetUrl" 
+                placeholder="https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit"
+                value=""
+            >
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+        
+        <div class="input-group">
+            <label for="sessionId">Session ID (để kết nối Remote - để trống để tạo mới):</label>
+            <input 
+                type="text" 
+                id="sessionId" 
+                placeholder="Để trống để tạo session mới"
+                value=""
+            >
+        </div>
+        
+        <div class="button-group">
+            <a href="#" class="btn btn-primary" id="btnTeleprompter">📱 Teleprompter</a>
+            <a href="#" class="btn btn-secondary" id="btnRemote">🎮 Remote</a>
+        </div>
+        
+        <div class="loading" id="loading" style="display: none;">
+            Đang tải dữ liệu từ Google Sheet...
+        </div>
+    </div>
+
+    <script src="js/sheets.js"></script>
+    <script>
+        const sheetUrlInput = document.getElementById('sheetUrl');
+        const sessionIdInput = document.getElementById('sessionId');
+        const btnTeleprompter = document.getElementById('btnTeleprompter');
+        const btnRemote = document.getElementById('btnRemote');
+        const errorMessage = document.getElementById('errorMessage');
+        const loading = document.getElementById('loading');
+
+        // Kiểm tra nếu có session ID trong localStorage
+        const savedSession = localStorage.getItem('teleprompter_session');
+        if (savedSession && !sessionIdInput.value) {
+            sessionIdInput.value = savedSession;
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('show');
+        }
+
+        function validateAndNavigate(mode) {
+            const sheetUrl = sheetUrlInput.value.trim();
+            const sessionId = sessionIdInput.value.trim();
+
+            hideError();
+
+            if (!sheetUrl) {
+                showError('Vui lòng nhập URL Google Sheet');
+                return;
+            }
+
+            if (!validateSheetUrl(sheetUrl)) {
+                showError('URL không hợp lệ. Vui lòng nhập URL Google Sheets đúng định dạng.');
+                return;
+            }
+
+            // Lưu sheet URL vào localStorage
+            localStorage.setItem('teleprompter_sheet_url', sheetUrl);
+
+            // Tạo URL với tham số
+            let url = mode === 'teleprompter' ? 'teleprompter.html' : 'remote.html';
+            url += '?sheet=' + encodeURIComponent(sheetUrl);
+            
+            if (sessionId) {
+                url += '&session=' + encodeURIComponent(sessionId);
+                localStorage.setItem('teleprompter_session', sessionId);
+            }
+
+            window.location.href = url;
+        }
+
+        btnTeleprompter.addEventListener('click', (e) => {
+            e.preventDefault();
+            validateAndNavigate('teleprompter');
+        });
+
+        btnRemote.addEventListener('click', (e) => {
+            e.preventDefault();
+            validateAndNavigate('remote');
+        });
+
+        // Enter key để submit
+        sheetUrlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                validateAndNavigate('teleprompter');
+            }
+        });
+    </script>
+</body>
+</html>
+

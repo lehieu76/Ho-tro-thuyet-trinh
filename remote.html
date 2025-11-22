@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teleprompter - Remote Control</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="remote-container">
+        <h1>🎮 Remote Control</h1>
+        
+        <div class="session-info">
+            <strong>Session ID:</strong> <code id="sessionDisplay">Đang tạo...</code>
+            <br><br>
+            <small>Chia sẻ Session ID này với thiết bị Teleprompter để kết nối</small>
+        </div>
+
+        <div class="status-indicator" id="statusIndicator">
+            <span id="statusText">Đang kết nối...</span>
+        </div>
+
+        <!-- Điều khiển cuộn -->
+        <div class="control-section">
+            <h2>🎯 Điều khiển cuộn</h2>
+            <div class="button-controls">
+                <button class="btn-play" id="btnPlay">▶️ Play</button>
+                <button class="btn-pause" id="btnPause">⏸️ Pause</button>
+                <button class="btn-reset" id="btnReset">🔄 Reset</button>
+            </div>
+            <div class="control-group">
+                <label>
+                    Tốc độ cuộn: <span class="value-display" id="speedValue">1.0x</span>
+                </label>
+                <input type="range" id="speedSlider" min="0.1" max="5" step="0.1" value="1">
+            </div>
+            <div class="control-group">
+                <label>
+                    Vị trí cuộn: <span class="value-display" id="scrollValue">0%</span>
+                </label>
+                <input type="range" id="scrollSlider" min="0" max="100" step="1" value="0">
+            </div>
+        </div>
+
+        <!-- Cài đặt hiển thị -->
+        <div class="control-section">
+            <h2>🎨 Cài đặt hiển thị</h2>
+            
+            <div class="control-group">
+                <label>
+                    Kích thước font: <span class="value-display" id="fontSizeValue">48px</span>
+                </label>
+                <input type="range" id="fontSizeSlider" min="12" max="120" step="2" value="48">
+            </div>
+
+            <div class="control-group">
+                <label>
+                    Khoảng cách dòng: <span class="value-display" id="lineHeightValue">1.6</span>
+                </label>
+                <input type="range" id="lineHeightSlider" min="0.8" max="3" step="0.1" value="1.6">
+            </div>
+
+            <div class="control-group">
+                <label>
+                    Màu nền:
+                    <input type="color" id="backgroundColorPicker" value="#000000">
+                </label>
+            </div>
+
+            <div class="control-group">
+                <label>
+                    Màu chữ:
+                    <input type="color" id="textColorPicker" value="#ffffff">
+                </label>
+            </div>
+
+            <div class="control-group">
+                <label>
+                    Màu thanh gạch ngang:
+                    <input type="color" id="guideLineColorPicker" value="#ff0000">
+                </label>
+            </div>
+
+            <div class="control-group">
+                <label>
+                    Độ dày thanh gạch ngang: <span class="value-display" id="guideLineThicknessValue">2px</span>
+                </label>
+                <input type="range" id="guideLineThicknessSlider" min="1" max="10" step="1" value="2">
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/remote.js"></script>
+</body>
+</html>
+
