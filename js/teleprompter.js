@@ -152,7 +152,11 @@ function setupFirebaseListeners() {
 // Setup controls
 function setupControls() {
     // Play/Pause button
-    btnPlayPause.addEventListener('click', togglePlayPause);
+    if (btnPlayPause) {
+        btnPlayPause.addEventListener('click', togglePlayPause);
+    } else {
+        console.error('Không tìm thấy nút Play/Pause');
+    }
 
     // Speed slider
     speedSlider.addEventListener('input', (e) => {
@@ -289,6 +293,7 @@ function setupKeyboardShortcuts() {
 
 // Toggle play/pause
 function togglePlayPause() {
+    console.log('Toggle play/pause clicked, isPlaying:', isPlaying);
     if (isPlaying) {
         stopAutoScroll();
         // Chỉ update Firebase nếu đã kết nối (có session từ Remote)
@@ -296,6 +301,7 @@ function togglePlayPause() {
             updateFirebasePlayState(false);
         }
     } else {
+        console.log('Starting auto scroll...');
         startAutoScroll();
         // Chỉ update Firebase nếu đã kết nối (có session từ Remote)
         if (database && sessionId && window.location.search.includes('session=')) {
@@ -306,7 +312,17 @@ function togglePlayPause() {
 
 // Start auto scroll
 function startAutoScroll() {
-    if (scrollInterval) return;
+    if (scrollInterval) {
+        // Nếu đã có interval, không tạo mới
+        return;
+    }
+    
+    // Kiểm tra xem có nội dung để scroll không
+    const maxScroll = teleprompterContent.scrollHeight - teleprompterContent.clientHeight;
+    if (maxScroll <= 0) {
+        console.log('Không có nội dung để scroll');
+        return;
+    }
     
     isPlaying = true;
     btnPlayPause.textContent = '⏸️ Pause';
@@ -315,19 +331,42 @@ function startAutoScroll() {
     scrollInterval = setInterval(() => {
         const scrollAmount = scrollSpeed * 2; // pixels per interval
         const oldScrollTop = teleprompterContent.scrollTop;
-        teleprompterContent.scrollTop += scrollAmount;
         
-        // Check if reached bottom (với margin nhỏ để tránh dừng sớm)
-        const maxScroll = teleprompterContent.scrollHeight - teleprompterContent.clientHeight;
+        // Tính toán lại maxScroll mỗi lần (phòng trường hợp content thay đổi)
+        const currentMaxScroll = teleprompterContent.scrollHeight - teleprompterContent.clientHeight;
+        
+        // Nếu không có gì để scroll, dừng lại
+        if (currentMaxScroll <= 0) {
+            stopAutoScroll();
+            return;
+        }
+        
+        // Scroll xuống
+        teleprompterContent.scrollTop += scrollAmount;
         const currentScroll = teleprompterContent.scrollTop;
         
-        // Nếu scroll không thay đổi (đã đến bottom) hoặc vượt quá bottom
-        if (currentScroll >= maxScroll - 1 || oldScrollTop === currentScroll) {
+        // Kiểm tra xem đã đến bottom chưa (với margin 5px để tránh dừng sớm)
+        // Chỉ dừng nếu scrollTop không thay đổi sau khi cố gắng scroll (đã đến bottom)
+        if (currentScroll >= currentMaxScroll - 5) {
+            // Đã đến gần bottom, scroll đến đúng bottom và dừng
+            teleprompterContent.scrollTop = currentMaxScroll;
             stopAutoScroll();
             if (database && sessionId && window.location.search.includes('session=')) {
                 updateFirebasePlayState(false);
             }
             return;
+        }
+        
+        // Kiểm tra nếu scroll không thay đổi (có thể do đã đến bottom hoặc lỗi)
+        if (Math.abs(currentScroll - oldScrollTop) < 0.1 && currentScroll > 0) {
+            // Scroll không thay đổi nhưng không phải ở đầu, có thể đã đến bottom
+            if (currentScroll >= currentMaxScroll - 10) {
+                stopAutoScroll();
+                if (database && sessionId && window.location.search.includes('session=')) {
+                    updateFirebasePlayState(false);
+                }
+                return;
+            }
         }
         
         // Throttle: chỉ update Firebase mỗi 200ms (thay vì mỗi 16ms)
