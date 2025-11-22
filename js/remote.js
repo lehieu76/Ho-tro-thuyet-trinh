@@ -21,8 +21,7 @@ let currentState = {
 const sessionDisplay = document.getElementById('sessionDisplay');
 const statusIndicator = document.getElementById('statusIndicator');
 const statusText = document.getElementById('statusText');
-const btnPlay = document.getElementById('btnPlay');
-const btnPause = document.getElementById('btnPause');
+const btnPlayPause = document.getElementById('btnPlayPause');
 const btnReset = document.getElementById('btnReset');
 const speedSlider = document.getElementById('speedSlider');
 const speedValue = document.getElementById('speedValue');
@@ -152,20 +151,43 @@ function setupFirebase() {
 
 // Setup controls
 function setupControls() {
-    // Play button
-    btnPlay.addEventListener('click', () => {
-        updatePlayState(true);
+    // Play/Pause toggle button
+    let currentPlayingState = false;
+    
+    btnPlayPause.addEventListener('click', () => {
+        currentPlayingState = !currentPlayingState;
+        updateButtonState(currentPlayingState);
+        updatePlayState(currentPlayingState);
     });
+    
+    // Update button state when receiving from Firebase
+    if (database && sessionId) {
+        database.ref(`sessions/${sessionId}/isPlaying`).on('value', (snapshot) => {
+            const playing = snapshot.val();
+            if (playing !== null && playing !== undefined) {
+                currentPlayingState = playing;
+                updateButtonState(currentPlayingState);
+            }
+        });
+    }
+    
+    // Helper function to update button state
+    function updateButtonState(playing) {
+        if (playing) {
+            btnPlayPause.textContent = '⏸️ Pause';
+            btnPlayPause.className = 'btn-pause';
+        } else {
+            btnPlayPause.textContent = '▶️ Play';
+            btnPlayPause.className = 'btn-play';
+        }
+    }
 
-    // Pause button
-    btnPause.addEventListener('click', () => {
-        updatePlayState(false);
-    });
-
-    // Reset button
+    // Reset button with confirmation
     btnReset.addEventListener('click', () => {
-        updateScrollPosition(0);
-        updatePlayState(false);
+        if (confirm('Bạn có chắc muốn reset về đầu không?')) {
+            updateScrollPosition(0);
+            updatePlayState(false);
+        }
     });
 
     // Speed slider - throttle để tránh update quá nhiều

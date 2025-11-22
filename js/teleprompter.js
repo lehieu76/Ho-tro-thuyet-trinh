@@ -197,12 +197,14 @@ function setupControls() {
         }
     });
 
-    // Reset button
+    // Reset button with confirmation
     btnReset.addEventListener('click', () => {
-        scrollToPosition(0);
-        stopAutoScroll();
-        updateFirebaseScrollPosition(0);
-        updateFirebasePlayState(false);
+        if (confirm('Bạn có chắc muốn reset về đầu không?')) {
+            scrollToPosition(0);
+            stopAutoScroll();
+            updateFirebaseScrollPosition(0);
+            updateFirebasePlayState(false);
+        }
     });
 
     // Settings button

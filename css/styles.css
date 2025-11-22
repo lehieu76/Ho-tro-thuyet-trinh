@@ -260,6 +260,12 @@ body {
     background: rgba(255, 255, 255, 0.3);
 }
 
+/* Nút Reset nhỏ hơn */
+.teleprompter-controls #btnReset {
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
 .teleprompter-controls .speed-control {
     display: flex;
     align-items: center;
@@ -475,13 +481,23 @@ body {
     background: #d35400;
 }
 
-.button-controls .btn-reset {
+.button-controls .btn-reset,
+.button-controls .btn-reset-small {
     background: #95a5a6;
     color: white;
 }
 
-.button-controls .btn-reset:hover {
+.button-controls .btn-reset:hover,
+.button-controls .btn-reset-small:hover {
     background: #7f8c8d;
+}
+
+/* Nút Reset nhỏ ở Remote */
+.button-controls .btn-reset-small {
+    padding: 8px 12px;
+    font-size: 12px;
+    flex: 0 0 auto;
+    min-width: 60px;
 }
 
 .status-indicator {
