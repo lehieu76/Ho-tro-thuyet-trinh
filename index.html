@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="index-container">
-        <h1>📺 Teleprompter version 2.2</h1>
+        <h1>📺 Teleprompter version 2.3</h1>
         
         <div class="input-group">
             <label for="sheetUrl">URL Google Sheet (công khai):</label>
@@ -71,15 +71,13 @@
         const modeRemote = document.getElementById('modeRemote');
         const sessionGroup = document.getElementById('sessionGroup');
         
-        // Kiểm tra nếu có session ID trong localStorage
-        const savedSession = localStorage.getItem('teleprompter_session');
-        if (savedSession && !sessionIdInput.value) {
-            sessionIdInput.value = savedSession;
-            // Nếu có session đã lưu, tự động chọn chế độ Remote
-            modeRemote.checked = true;
-            sessionGroup.style.display = 'block';
-            btnRemote.style.display = 'block';
-        }
+        // Đảm bảo chế độ độc lập được chọn mặc định
+        modeStandalone.checked = true;
+        sessionGroup.style.display = 'none';
+        btnRemote.style.display = 'none';
+        
+        // Kiểm tra nếu có session ID trong localStorage (chỉ khi người dùng muốn dùng Remote)
+        // Không tự động chọn Remote nữa - để mặc định là độc lập
 
         // Xử lý thay đổi chế độ
         modeStandalone.addEventListener('change', () => {
