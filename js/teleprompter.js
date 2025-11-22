@@ -251,10 +251,13 @@ function setupControls() {
             }
         }
         // Debounce: chỉ update sau 100ms khi người dùng ngừng scroll
-        clearTimeout(scrollUpdateTimeout);
-        scrollUpdateTimeout = setTimeout(() => {
-            throttledUpdateScrollPosition(getScrollPercentage());
-        }, 100);
+        // Chỉ update Firebase nếu có session từ Remote
+        if (window.location.search.includes('session=')) {
+            clearTimeout(scrollUpdateTimeout);
+            scrollUpdateTimeout = setTimeout(() => {
+                throttledUpdateScrollPosition(getScrollPercentage());
+            }, 100);
+        }
     });
 }
 
@@ -293,20 +296,14 @@ function setupKeyboardShortcuts() {
 
 // Toggle play/pause
 function togglePlayPause() {
-    console.log('Toggle play/pause clicked, isPlaying:', isPlaying);
     if (isPlaying) {
         stopAutoScroll();
-        // Chỉ update Firebase nếu đã kết nối (có session từ Remote)
-        if (database && sessionId && window.location.search.includes('session=')) {
-            updateFirebasePlayState(false);
-        }
+        // Chỉ update Firebase nếu có session từ Remote
+        updateFirebasePlayState(false);
     } else {
-        console.log('Starting auto scroll...');
         startAutoScroll();
-        // Chỉ update Firebase nếu đã kết nối (có session từ Remote)
-        if (database && sessionId && window.location.search.includes('session=')) {
-            updateFirebasePlayState(true);
-        }
+        // Chỉ update Firebase nếu có session từ Remote
+        updateFirebasePlayState(true);
     }
 }
 
@@ -370,10 +367,13 @@ function startAutoScroll() {
         }
         
         // Throttle: chỉ update Firebase mỗi 200ms (thay vì mỗi 16ms)
-        const now = Date.now();
-        if (now - lastScrollUpdateTime >= 200) {
-            throttledUpdateScrollPosition(getScrollPercentage());
-            lastScrollUpdateTime = now;
+        // Chỉ update nếu có session từ Remote
+        if (window.location.search.includes('session=')) {
+            const now = Date.now();
+            if (now - lastScrollUpdateTime >= 200) {
+                throttledUpdateScrollPosition(getScrollPercentage());
+                lastScrollUpdateTime = now;
+            }
         }
     }, 16); // ~60fps cho smooth scrolling, nhưng chỉ sync Firebase mỗi 200ms
 }
@@ -422,10 +422,16 @@ function toggleFullscreen() {
     }
 }
 
-// Firebase update functions
+// Firebase update functions - chỉ update khi có session từ Remote
 function updateFirebaseScrollPosition(position) {
-    if (database && sessionId) {
-        database.ref(`sessions/${sessionId}/scrollPosition`).set(position);
+    // Chỉ update Firebase nếu có session từ Remote (có ?session= trong URL)
+    if (database && sessionId && window.location.search.includes('session=')) {
+        database.ref(`sessions/${sessionId}/scrollPosition`).set(position).catch((error) => {
+            // Chỉ log lỗi, không hiển thị để tránh spam console
+            if (error.code !== 'PERMISSION_DENIED') {
+                console.error('Lỗi update scroll position:', error);
+            }
+        });
     }
 }
 
@@ -435,14 +441,24 @@ function throttledUpdateScrollPosition(position) {
 }
 
 function updateFirebasePlayState(playing) {
-    if (database && sessionId) {
-        database.ref(`sessions/${sessionId}/isPlaying`).set(playing);
+    // Chỉ update Firebase nếu có session từ Remote
+    if (database && sessionId && window.location.search.includes('session=')) {
+        database.ref(`sessions/${sessionId}/isPlaying`).set(playing).catch((error) => {
+            if (error.code !== 'PERMISSION_DENIED') {
+                console.error('Lỗi update play state:', error);
+            }
+        });
     }
 }
 
 function updateFirebaseSpeed(speed) {
+    // Chỉ update Firebase nếu có session từ Remote
     if (database && sessionId && window.location.search.includes('session=')) {
-        database.ref(`sessions/${sessionId}/speed`).set(speed);
+        database.ref(`sessions/${sessionId}/speed`).set(speed).catch((error) => {
+            if (error.code !== 'PERMISSION_DENIED') {
+                console.error('Lỗi update speed:', error);
+            }
+        });
     }
 }
 
