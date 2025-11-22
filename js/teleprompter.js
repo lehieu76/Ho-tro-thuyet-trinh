@@ -326,9 +326,6 @@ function startAutoScroll() {
     lastScrollUpdateTime = Date.now(); // Reset thời gian update
     
     scrollInterval = setInterval(() => {
-        const scrollAmount = scrollSpeed * 2; // pixels per interval
-        const oldScrollTop = teleprompterContent.scrollTop;
-        
         // Tính toán lại maxScroll mỗi lần (phòng trường hợp content thay đổi)
         const currentMaxScroll = teleprompterContent.scrollHeight - teleprompterContent.clientHeight;
         
@@ -338,14 +335,18 @@ function startAutoScroll() {
             return;
         }
         
+        // Tính scrollAmount dựa trên tốc độ (tăng lên để mượt hơn)
+        const scrollAmount = scrollSpeed * 3; // Tăng từ 2 lên 3 pixels per interval
+        const oldScrollTop = teleprompterContent.scrollTop;
+        
         // Scroll xuống
         teleprompterContent.scrollTop += scrollAmount;
         const currentScroll = teleprompterContent.scrollTop;
         
-        // Kiểm tra xem đã đến bottom chưa (với margin 5px để tránh dừng sớm)
-        // Chỉ dừng nếu scrollTop không thay đổi sau khi cố gắng scroll (đã đến bottom)
-        if (currentScroll >= currentMaxScroll - 5) {
-            // Đã đến gần bottom, scroll đến đúng bottom và dừng
+        // Kiểm tra xem đã đến bottom chưa
+        // Chỉ dừng khi thực sự đã đến bottom (với margin nhỏ)
+        if (currentScroll >= currentMaxScroll - 2) {
+            // Đã đến bottom, scroll đến đúng bottom và dừng
             teleprompterContent.scrollTop = currentMaxScroll;
             stopAutoScroll();
             if (database && sessionId && window.location.search.includes('session=')) {
@@ -354,10 +355,11 @@ function startAutoScroll() {
             return;
         }
         
-        // Kiểm tra nếu scroll không thay đổi (có thể do đã đến bottom hoặc lỗi)
-        if (Math.abs(currentScroll - oldScrollTop) < 0.1 && currentScroll > 0) {
-            // Scroll không thay đổi nhưng không phải ở đầu, có thể đã đến bottom
-            if (currentScroll >= currentMaxScroll - 10) {
+        // Kiểm tra nếu scroll không thay đổi (có thể do đã đến bottom)
+        // Chỉ check nếu đã scroll được một khoảng đáng kể
+        if (oldScrollTop > 10 && Math.abs(currentScroll - oldScrollTop) < 0.5) {
+            // Scroll không thay đổi, có thể đã đến bottom
+            if (currentScroll >= currentMaxScroll - 5) {
                 stopAutoScroll();
                 if (database && sessionId && window.location.search.includes('session=')) {
                     updateFirebasePlayState(false);

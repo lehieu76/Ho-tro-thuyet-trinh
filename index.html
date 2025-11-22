@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="index-container">
-        <h1>📺 Teleprompter</h1>
+        <h1>📺 Teleprompter version 2.2</h1>
         
         <div class="input-group">
             <label for="sheetUrl">URL Google Sheet (công khai):</label>
@@ -22,18 +22,35 @@
         </div>
         
         <div class="input-group">
-            <label for="sessionId">Session ID (để kết nối Remote - để trống để tạo mới):</label>
+            <label>Chế độ sử dụng:</label>
+            <div class="mode-selection">
+                <label class="radio-option">
+                    <input type="radio" name="mode" id="modeStandalone" value="standalone" checked>
+                    <span class="radio-label">🔄 Chạy độc lập</span>
+                    <small>Teleprompter hoạt động độc lập, không cần Remote</small>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="mode" id="modeRemote" value="remote">
+                    <span class="radio-label">🎮 Chạy qua Remote</span>
+                    <small>Điều khiển từ xa bằng thiết bị khác</small>
+                </label>
+            </div>
+        </div>
+        
+        <div class="input-group" id="sessionGroup" style="display: none;">
+            <label for="sessionId">Session ID:</label>
             <input 
                 type="text" 
                 id="sessionId" 
                 placeholder="Để trống để tạo session mới"
                 value=""
             >
+            <small>Chia sẻ Session ID này với thiết bị Teleprompter để kết nối</small>
         </div>
         
         <div class="button-group">
-            <a href="#" class="btn btn-primary" id="btnTeleprompter">📱 Teleprompter</a>
-            <a href="#" class="btn btn-secondary" id="btnRemote">🎮 Remote</a>
+            <a href="#" class="btn btn-primary" id="btnTeleprompter">📱 Mở Teleprompter</a>
+            <a href="#" class="btn btn-secondary" id="btnRemote" style="display: none;">🎮 Mở Remote</a>
         </div>
         
         <div class="loading" id="loading" style="display: none;">
@@ -50,11 +67,34 @@
         const errorMessage = document.getElementById('errorMessage');
         const loading = document.getElementById('loading');
 
+        const modeStandalone = document.getElementById('modeStandalone');
+        const modeRemote = document.getElementById('modeRemote');
+        const sessionGroup = document.getElementById('sessionGroup');
+        
         // Kiểm tra nếu có session ID trong localStorage
         const savedSession = localStorage.getItem('teleprompter_session');
         if (savedSession && !sessionIdInput.value) {
             sessionIdInput.value = savedSession;
+            // Nếu có session đã lưu, tự động chọn chế độ Remote
+            modeRemote.checked = true;
+            sessionGroup.style.display = 'block';
+            btnRemote.style.display = 'block';
         }
+
+        // Xử lý thay đổi chế độ
+        modeStandalone.addEventListener('change', () => {
+            if (modeStandalone.checked) {
+                sessionGroup.style.display = 'none';
+                btnRemote.style.display = 'none';
+            }
+        });
+
+        modeRemote.addEventListener('change', () => {
+            if (modeRemote.checked) {
+                sessionGroup.style.display = 'block';
+                btnRemote.style.display = 'block';
+            }
+        });
 
         function showError(message) {
             errorMessage.textContent = message;
@@ -68,6 +108,7 @@
         function validateAndNavigate(mode) {
             const sheetUrl = sheetUrlInput.value.trim();
             const sessionId = sessionIdInput.value.trim();
+            const isRemoteMode = modeRemote.checked;
 
             hideError();
 
@@ -88,9 +129,15 @@
             let url = mode === 'teleprompter' ? 'teleprompter.html' : 'remote.html';
             url += '?sheet=' + encodeURIComponent(sheetUrl);
             
-            if (sessionId) {
+            // Nếu chế độ Remote hoặc có session ID, thêm session vào URL
+            if (isRemoteMode && sessionId) {
                 url += '&session=' + encodeURIComponent(sessionId);
                 localStorage.setItem('teleprompter_session', sessionId);
+            } else if (isRemoteMode && !sessionId) {
+                // Tạo session mới nếu chưa có
+                const newSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                url += '&session=' + encodeURIComponent(newSessionId);
+                localStorage.setItem('teleprompter_session', newSessionId);
             }
 
             window.location.href = url;

@@ -52,6 +52,71 @@ body {
     border-color: #3498db;
 }
 
+.input-group small {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #7f8c8d;
+}
+
+/* Mode Selection Radio Buttons */
+.mode-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: flex-start;
+    padding: 15px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: #f9f9f9;
+}
+
+.radio-option:hover {
+    border-color: #3498db;
+    background: #f0f8ff;
+}
+
+.radio-option input[type="radio"] {
+    margin-right: 12px;
+    margin-top: 3px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.radio-option input[type="radio"]:checked + .radio-label {
+    color: #3498db;
+    font-weight: 600;
+}
+
+.radio-option:has(input[type="radio"]:checked) {
+    border-color: #3498db;
+    background: #e8f4f8;
+}
+
+.radio-label {
+    display: block;
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: #333;
+}
+
+.radio-option small {
+    display: block;
+    color: #7f8c8d;
+    font-size: 13px;
+    margin-top: 4px;
+    margin-left: 32px;
+}
+
 .button-group {
     display: flex;
     gap: 15px;
